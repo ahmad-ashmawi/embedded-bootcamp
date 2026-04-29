@@ -42,14 +42,14 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+
 /* USER CODE BEGIN PFP */
-/**
- * PROTOTYPE: Tell the compiler app_main exists.
- */
-void app_main(void);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
+
+
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
@@ -58,6 +58,8 @@ void app_main(void);
   * @brief  The application entry point.
   * @retval int
   */
+
+
 int main(void)
 {
 
@@ -86,20 +88,52 @@ int main(void)
   MX_SPI1_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  /* INITIALIZATION: This runs ONCE after peripherals are ready */
-  /* e.g., HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); */
+
+
+	// Note: If the device was powered up with the CS pin low,
+	// it must be brought high and back low to initiate communication
+
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1); // Chip Select (CS)
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+
+
   /* USER CODE END 2 */
 
+
   /* Infinite loop */
+
   /* USER CODE BEGIN WHILE */
 
-    app_main(); // <--- CALL YOUR FUNCTION HERE
+	while (1)
+	{
+		// WARG BootCamp... !
+
+		uint8_t sent_data[3] = {0x01, 0x80, 0x00}; // data sent to ADC
+		uint8_t received_data [3] = {0, 0, 0}; // to store received data
+
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0); // start reading ADC
+		HAL_SPI_TransmitReceive(&hspi1, sent_data, received_data, 3, 20);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);  // end reading ADC
+
+		uint16_t ADC_value= ( (received_data[1] & 0x03) << 8 ) | received_data[2];
+		uint32_t PWM_value = (ADC_value *1000 / 1023) + 1000;
+
+		TIM1->CCR1 = PWM_value;
+
+		HAL_Delay(10);
+
+	}
+
 
     /* USER CODE END WHILE */
+
+
 
     /* USER CODE BEGIN 3 */
 
   /* USER CODE END 3 */
+
+
 }
 
 /**
@@ -137,43 +171,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-/**
- * DEFINITION: Write your actual application logic here!
- * This keeps main() clean and prevents code loss during regenerations.
- */
-void app_main(void)
-{
-	while (1)
-	{
-		// Green LED ... STM32 Working if Blinking... !!
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, 1);
-		HAL_Delay(1000);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, 0);
-		HAL_Delay(1000);
 
-
-		// WARG BootCamp... !
-
-		uint8_t sent_data[3] = {0x01, 0x80, 0x00}; // data sent to ADC
-		uint8_t received_data [3] = {0, 0, 0}; // to store received data
-
-
-		// Note: If the device was powered up with the CS pin low,
-		// it must be brought high and back low to initiate communication
-
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1); // Chip Select (CS)
-
-
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0);
-		HAL_SPI_TransmitReceive(&hspi1, sent_data, received_data, 3, 200);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);  // to end reading data...
-
-		uint16_t ADC_input = ( (received_data[1] & 0x03) << 8 ) | received_data[2];
-	}
-
-	HAL_Delay(10);
-
-}
 /* USER CODE END 4 */
 
 /**
