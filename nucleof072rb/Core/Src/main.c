@@ -4,26 +4,18 @@
   * @file           : main.c
   * @brief          : Main program body
   ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "usart.h"
+#include "spi.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include "stdio.h"
 
 /* USER CODE END Includes */
 
@@ -34,6 +26,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,7 +43,10 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+/**
+ * PROTOTYPE: Tell the compiler app_main exists.
+ */
+void app_main(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -64,6 +60,7 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -86,19 +83,22 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
+  MX_SPI1_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-
+  /* INITIALIZATION: This runs ONCE after peripherals are ready */
+  /* e.g., HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); */
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+
+    app_main(); // <--- CALL YOUR FUNCTION HERE
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+
   /* USER CODE END 3 */
 }
 
@@ -110,7 +110,6 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -122,6 +121,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
@@ -134,16 +134,46 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
-  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-  {
-    Error_Handler();
-  }
 }
 
 /* USER CODE BEGIN 4 */
+/**
+ * DEFINITION: Write your actual application logic here!
+ * This keeps main() clean and prevents code loss during regenerations.
+ */
+void app_main(void)
+{
+	while (1)
+	{
+		// Green LED ... STM32 Working if Blinking... !!
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, 1);
+		HAL_Delay(1000);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, 0);
+		HAL_Delay(1000);
 
+
+		// WARG BootCamp... !
+
+		uint8_t sent_data[3] = {0x01, 0x80, 0x00}; // data sent to ADC
+		uint8_t received_data [3] = {0, 0, 0}; // to store received data
+
+
+		// Note: If the device was powered up with the CS pin low,
+		// it must be brought high and back low to initiate communication
+
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1); // Chip Select (CS)
+
+
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 0);
+		HAL_SPI_TransmitReceive(&hspi1, sent_data, received_data, 3, 200);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);  // to end reading data...
+
+		uint16_t ADC_input = ( (received_data[1] & 0x03) << 8 ) | received_data[2];
+	}
+
+	HAL_Delay(10);
+
+}
 /* USER CODE END 4 */
 
 /**
@@ -160,8 +190,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
@@ -177,5 +206,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
