@@ -23,8 +23,6 @@
 
 /* USER CODE END Includes */
 
-
-
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 /* USER CODE END PTD */
@@ -38,18 +36,16 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+
 /* USER CODE BEGIN PV */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-
 /* USER CODE BEGIN PFP */
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
-
-
 /* USER CODE BEGIN 0 */
 /* USER CODE END 0 */
 
@@ -57,8 +53,6 @@ void SystemClock_Config(void);
   * @brief  The application entry point.
   * @retval int
   */
-
-
 int main(void)
 {
 
@@ -67,22 +61,22 @@ int main(void)
 
   /* MCU Configuration--------------------------------------------------------*/
 
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
   /* USER CODE BEGIN Init */
   /* USER CODE END Init */
 
+  /* Configure the system clock */
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
   /* USER CODE END SysInit */
 
+  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI1_Init();
   MX_TIM1_Init();
-
-
-
   /* USER CODE BEGIN 2 */
 
 	// Note: If the device was powered up with the CS pin low,
@@ -92,9 +86,7 @@ int main(void)
 
   /* USER CODE END 2 */
 
-
   /* Infinite loop */
-
   /* USER CODE BEGIN WHILE */
 
 	while (1)
@@ -109,35 +101,40 @@ int main(void)
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, 1);  // end reading ADC
 
 		uint16_t ADC_value= ( (received_data[1] & 0x03) << 8 ) | received_data[2];
-		uint32_t PWM_value = (ADC_value *1000 / 1023) + 1000;
 
-		TIM1->CCR1 = PWM_value;
+
+		uint32_t PWM_value = (ADC_value *2937.5 / 1023) + 2937.5;
+		/*
+		 	 - Max number in 10 bits: 1023
+		 	 - Prescaler: 15
+		 	 - Period: 58,750
+		 */
+
+		TIM1->CCR1 = PWM_value; // To set the duty cycle
 
 		HAL_Delay(10);
+
 
 	}
 
     /* USER CODE END WHILE */
 
-
-
     /* USER CODE BEGIN 3 */
-    /* USER CODE END 3 */
-
-
+  /* USER CODE END 3 */
 }
 
 /**
   * @brief System Clock Configuration
   * @retval None
   */
-
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
@@ -167,7 +164,6 @@ void SystemClock_Config(void)
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
-
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -178,7 +174,6 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
